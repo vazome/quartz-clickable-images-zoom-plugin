@@ -3,7 +3,7 @@ Enabled Lightbox zoom for Quartz built websites.
 
 Video showcase:
 
-<video controls src="20250622-1026-47.3163320.mp4" title="Title"></video>
+![](example.mp4)
 
 To enable:
 - Add file `clickableImages.ts` to your `quartz\plugins\transformers\`
