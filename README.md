@@ -1,4 +1,4 @@
-# quartz-image-lightbox-zoom
+# Quartz Clickable Image Zoom plugin
 Enabled Lightbox zoom for Quartz built websites.
 
 Video showcase:
