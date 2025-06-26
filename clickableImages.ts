@@ -2,16 +2,7 @@ import { QuartzTransformerPlugin } from "../types"
 import { Root } from "hast"
 import { visit } from "unist-util-visit"
 
-export interface Options {
-  enableLightbox: boolean
-}
-
-const defaultOptions: Options = {
-  enableLightbox: true,
-}
-
-export const ClickableImages: QuartzTransformerPlugin<Partial<Options>> = (userOpts?: Partial<Options>) => {
-  const opts = { ...defaultOptions, ...userOpts }
+export const ClickableImages: QuartzTransformerPlugin = () => {
 
   return {
     name: "ClickableImages",
@@ -19,8 +10,6 @@ export const ClickableImages: QuartzTransformerPlugin<Partial<Options>> = (userO
       return [
         () => {
           return (tree: Root, _file) => {
-            if (!opts.enableLightbox) return
-
             visit(tree, "element", (node: any, index, parent) => {
               if (node.tagName === "img" && parent && index !== undefined) {
                 // Get the current img src which should already be resolved
@@ -55,9 +44,118 @@ export const ClickableImages: QuartzTransformerPlugin<Partial<Options>> = (userO
       ]
     },
     externalResources() {
-      if (!opts.enableLightbox) return {}
-
       return {
+        css: [
+          {
+            inline: true,
+            content: `
+/* Lightbox Image Styles */
+.lightbox-wrapper {
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin: 0;
+}
+
+.lightbox-wrapper:hover {
+  transform: scale(1.02);
+}
+
+.lightbox-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.lightbox-image:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal/Lightbox Overlay */
+.lightbox-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.lightbox-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-modal img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  transform: scale(0.8);
+  transition: transform 0.3s ease;
+}
+
+.lightbox-modal.active img {
+  transform: scale(1);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 2rem;
+  color: white;
+  cursor: pointer;
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Prevent body scroll when modal is open */
+body.lightbox-open {
+  overflow: hidden;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .lightbox-modal img {
+    max-width: 95%;
+    max-height: 95%;
+  }
+
+  .lightbox-close {
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    width: 35px;
+    height: 35px;
+  }
+}
+            `,
+          },
+        ],
         js: [
           {
             loadTime: "afterDOMReady",
