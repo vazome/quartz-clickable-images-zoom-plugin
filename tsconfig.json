@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "types": ["node"],
+    // @quartz-community/types is published with `exports` pointing at dist/, but
+    // only ships src/. Map it to the shipped source until upstream fixes it.
+    "paths": {
+      "@quartz-community/types": ["./node_modules/@quartz-community/types/src/index.ts"]
+    }
+  },
+  "include": ["src", "tsup.config.ts"],
+  "exclude": ["dist", "node_modules", "legacy"]
+}

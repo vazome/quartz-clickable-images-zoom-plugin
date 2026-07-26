@@ -1,0 +1,68 @@
+{
+  "name": "quartz-clickable-images-zoom-plugin",
+  "version": "1.0.0",
+  "description": "Lightbox zoom for images on Quartz sites.",
+  "type": "module",
+  "license": "MIT",
+  "author": "vazome",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vazome/quartz-clickable-images-zoom-plugin"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "lightbox",
+    "zoom",
+    "images",
+    "rehype",
+    "hast"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node test/smoke.mjs"
+  },
+  "dependencies": {
+    "@quartz-community/types": "^0.2.1"
+  },
+  "devDependencies": {
+    "@types/hast": "^3.0.4",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0",
+    "vfile": "^6.0.3"
+  },
+  "quartz": {
+    "name": "clickable-images",
+    "displayName": "Clickable Images Zoom",
+    "category": "transformer",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultOrder": 50,
+    "defaultEnabled": true,
+    "defaultOptions": {}
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
