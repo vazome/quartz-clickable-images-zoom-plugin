@@ -2,7 +2,7 @@
 // Run with `npm test` (builds first) or `node test/smoke.mjs`.
 import assert from "node:assert/strict"
 import * as mod from "../dist/index.js"
-import { ClickableImages } from "../dist/index.js"
+import { ImageZoom } from "../dist/index.js"
 
 // Quartz's config-loader picks the `default` export and classifies the plugin by
 // probing the instance. If this drifts, Quartz skips the plugin with only a warning.
@@ -23,7 +23,7 @@ const tree = {
   ],
 }
 
-const transform = ClickableImages().htmlPlugins()[0]()
+const transform = ImageZoom().htmlPlugins()[0]()
 transform(tree, {})
 
 const [tagged, untouched] = tree.children[0].children
@@ -46,7 +46,7 @@ assert.equal(untouched.properties.className, undefined)
 assert.equal(untouched.properties.loading, undefined)
 
 // Resources are still shaped the way Quartz expects.
-const res = ClickableImages().externalResources()
+const res = ImageZoom().externalResources()
 assert.equal(res.css[0].inline, true)
 assert.match(res.css[0].content, /\.lightbox-image/)
 assert.equal(res.js[0].contentType, "inline")

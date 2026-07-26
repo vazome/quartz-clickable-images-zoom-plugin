@@ -1,5 +1,5 @@
 import { QuartzTransformerPlugin } from '@quartz-community/types';
 
-declare const ClickableImages: QuartzTransformerPlugin;
+declare const ImageZoom: QuartzTransformerPlugin;
 
-export { ClickableImages, ClickableImages as default };
+export { ImageZoom, ImageZoom as default };

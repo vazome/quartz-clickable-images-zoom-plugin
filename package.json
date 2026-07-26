@@ -1,20 +1,20 @@
 {
-  "name": "quartz-clickable-images-zoom-plugin",
+  "name": "quartz-image-zoom",
   "version": "1.0.0",
-  "description": "Lightbox zoom for images on Quartz sites.",
+  "description": "Click any image on your Quartz site to open it full-size.",
   "type": "module",
   "license": "MIT",
   "author": "vazome",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vazome/quartz-clickable-images-zoom-plugin"
+    "url": "https://github.com/vazome/quartz-image-zoom"
   },
   "keywords": [
     "quartz",
     "quartz-plugin",
-    "lightbox",
     "zoom",
     "images",
+    "lightbox",
     "rehype",
     "hast"
   ],
@@ -52,8 +52,8 @@
     "vfile": "^6.0.3"
   },
   "quartz": {
-    "name": "clickable-images",
-    "displayName": "Clickable Images Zoom",
+    "name": "image-zoom",
+    "displayName": "Image Zoom",
     "category": "transformer",
     "version": "1.0.0",
     "quartzVersion": ">=5.0.0",

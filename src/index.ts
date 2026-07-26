@@ -2,9 +2,9 @@ import type { QuartzTransformerPlugin } from "@quartz-community/types"
 import type { Root } from "hast"
 import { visit } from "unist-util-visit"
 
-export const ClickableImages: QuartzTransformerPlugin = () => {
+export const ImageZoom: QuartzTransformerPlugin = () => {
   return {
-    name: "ClickableImages",
+    name: "ImageZoom",
     htmlPlugins() {
       return [
         () => {
@@ -210,4 +210,4 @@ dialog.lightbox img {
   }
 }
 
-export default ClickableImages
+export default ImageZoom

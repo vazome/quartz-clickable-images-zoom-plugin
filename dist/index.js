@@ -198,9 +198,9 @@ function visit(tree, testOrVisitor, visitorOrReverse, maybeReverse) {
 }
 
 // src/index.ts
-var ClickableImages = () => {
+var ImageZoom = () => {
   return {
-    name: "ClickableImages",
+    name: "ImageZoom",
     htmlPlugins() {
       return [
         () => {
@@ -400,8 +400,8 @@ dialog.lightbox img {
     }
   };
 };
-var src_default = ClickableImages;
+var src_default = ImageZoom;
 
-export { ClickableImages, src_default as default };
+export { ImageZoom, src_default as default };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

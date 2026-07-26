@@ -1,6 +1,6 @@
-# Quartz Clickable Images Zoom plugin
+# Quartz Image Zoom
 
-Enables Lightbox zoom for [Quartz](https://github.com/jackyzha0/quartz) built websites.
+Click any image on a [Quartz](https://github.com/jackyzha0/quartz) site to open it full-size.
 
 Video showcase:
 
@@ -11,7 +11,7 @@ You can check it out here - https://vazome.tech/
 ## Quartz v5
 
 ```bash
-npx quartz plugin add github:vazome/quartz-clickable-images-zoom-plugin
+npx quartz plugin add github:vazome/quartz-image-zoom
 ```
 
 That's it — the plugin ships a pre-built `dist/`, so there is nothing to install or
@@ -19,12 +19,12 @@ compile. The command adds it to your `quartz.config.yaml`:
 
 ```yaml
 plugins:
-  - source: github:vazome/quartz-clickable-images-zoom-plugin
+  - source: github:vazome/quartz-image-zoom
     enabled: true
 ```
 
 It registers as a transformer at order `50` and has no options. Order does not
-matter: the plugin only tags images, and the lightbox reads the browser-resolved
+matter: the plugin only tags images, and the overlay reads the browser-resolved
 `img.src` at click time, so it works whether it runs before or after `crawl-links`.
 
 ## Quartz v4
