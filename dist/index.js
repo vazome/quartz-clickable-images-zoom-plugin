@@ -205,28 +205,12 @@ var ClickableImages = () => {
       return [
         () => {
           return (tree, _file) => {
-            visit(tree, "element", (node, index, parent) => {
-              if (node.tagName === "img" && parent && index !== void 0) {
-                const originalSrc = node.properties?.src;
-                const originalAlt = node.properties?.alt || "";
-                if (!originalSrc) return;
-                node.properties.className = (node.properties.className || []).concat([
-                  "lightbox-image"
-                ]);
-                node.properties["data-src"] = originalSrc;
-                node.properties["data-alt"] = originalAlt;
-                node.properties.loading = "lazy";
-                const wrapper = {
-                  type: "element",
-                  tagName: "div",
-                  properties: {
-                    className: ["lightbox-wrapper"],
-                    "data-lightbox": "true"
-                  },
-                  children: [node]
-                };
-                parent.children[index] = wrapper;
-              }
+            visit(tree, "element", (node) => {
+              if (node.tagName !== "img" || !node.properties?.src) return;
+              node.properties.className = (node.properties.className || []).concat([
+                "lightbox-image"
+              ]);
+              node.properties.loading = "lazy";
             });
           };
         }
@@ -238,23 +222,12 @@ var ClickableImages = () => {
           {
             inline: true,
             content: `
-/* Lightbox Image Styles */
-.lightbox-wrapper {
-  display: inline-block;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  margin: 0;
-}
-
-.lightbox-wrapper:hover {
-  transform: scale(1.02);
-}
-
 .lightbox-image {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: zoom-in;
   transition: box-shadow 0.2s ease;
 }
 
@@ -262,51 +235,66 @@ var ClickableImages = () => {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* Modal/Lightbox Overlay */
-.lightbox-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
+/* A native <dialog> gives us Esc-to-close, focus trapping, inert background
+   and the ::backdrop pseudo-element, so none of that needs scripting. */
+dialog.lightbox {
+  padding: 0;
+  border: 0;
+  background: none;
+  max-width: none;
+  max-height: none;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+/* Only ever set display on [open] \u2014 styling display on the dialog itself
+   would override the UA's display:none and leave it permanently visible. */
+dialog.lightbox[open] {
+  display: grid;
+  place-items: center;
+}
+
+dialog.lightbox::backdrop {
+  /* ponytail: flat colour, no backdrop-filter. A full-viewport blur is
+     recomposited every frame in Chrome and is what made this stutter. */
   background: rgba(0, 0, 0, 0.9);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-  backdrop-filter: blur(5px);
 }
 
-.lightbox-modal.active {
+/* Fade in on the compositor only. @starting-style supplies the "from" state,
+   so there is no layout or paint work in the animation at all. */
+dialog.lightbox,
+dialog.lightbox::backdrop {
+  transition: opacity 0.2s ease;
   opacity: 1;
-  visibility: visible;
 }
 
-.lightbox-modal img {
+@starting-style {
+  dialog.lightbox[open],
+  dialog.lightbox[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+dialog.lightbox img {
+  /* Sized entirely by CSS \u2014 no JS measurement, so nothing resizes after paint. */
   max-width: 90vw;
   max-height: 90vh;
+  width: auto;
+  height: auto;
   object-fit: contain;
   border-radius: 8px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  transform: scale(0.8);
-  transition: transform 0.3s ease;
-}
-
-.lightbox-modal.active img {
-  transform: scale(1);
+  cursor: zoom-out;
 }
 
 .lightbox-close {
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 30px;
   font-size: 2rem;
+  line-height: 1;
   color: white;
   cursor: pointer;
-  z-index: 1001;
   background: rgba(0, 0, 0, 0.5);
   border: none;
   border-radius: 50%;
@@ -322,24 +310,20 @@ var ClickableImages = () => {
   background: rgba(0, 0, 0, 0.8);
 }
 
-/* Prevent body scroll when modal is open */
-body.lightbox-open {
-  overflow: hidden;
-}
-
-/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .lightbox-modal img {
-    max-width: 95%;
-    max-height: 95%;
-  }
-
   .lightbox-close {
     top: 10px;
     right: 15px;
     font-size: 1.5rem;
     width: 35px;
     height: 35px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.lightbox,
+  dialog.lightbox::backdrop {
+    transition: none;
   }
 }
             `
@@ -350,143 +334,64 @@ body.lightbox-open {
             loadTime: "afterDOMReady",
             contentType: "inline",
             script: `
-              // Lightbox functionality
-              function initLightbox() {
-                // Remove existing modal if it exists
-                const existingModal = document.querySelector('.lightbox-modal');
-                if (existingModal) {
-                  existingModal.remove();
-                }
+              // Guard against re-execution: Quartz may run this again on SPA
+              // navigation, and re-binding would leak a handler per page view.
+              if (!window.__lightboxReady) {
+                window.__lightboxReady = true;
 
-                // Create modal elements
-                const modal = document.createElement('div');
-                modal.className = 'lightbox-modal';
+                let dialog;
+                function getDialog() {
+                  if (dialog) return dialog;
+                  dialog = document.createElement('dialog');
+                  dialog.className = 'lightbox';
+                  const close = document.createElement('button');
+                  close.className = 'lightbox-close';
+                  close.setAttribute('aria-label', 'Close lightbox');
+                  close.innerHTML = '&times;';
+                  const img = document.createElement('img');
+                  img.alt = '';
+                  dialog.append(close, img);
+                  document.body.appendChild(dialog);
 
-                const closeBtn = document.createElement('button');
-                closeBtn.className = 'lightbox-close';
-                closeBtn.innerHTML = '\xD7';
-                closeBtn.setAttribute('aria-label', 'Close lightbox');
-
-                const img = document.createElement('img');
-                img.style.display = 'none';
-
-                modal.appendChild(closeBtn);
-                modal.appendChild(img);
-                document.body.appendChild(modal);
-
-                // Function to open lightbox
-                function openLightbox(imageSrc, imageAlt, originalImg) {
-                  img.src = imageSrc;
-                  img.alt = imageAlt || '';
-                  img.style.display = 'block';
-                  modal.classList.add('active');
-                  document.body.classList.add('lightbox-open');
-
-                  // Preload the image and set appropriate size
-                  const preloadImg = new Image();
-                  preloadImg.onload = () => {
-                    img.src = imageSrc;
-
-                    // Get original image size on page
-                    const originalRect = originalImg ? originalImg.getBoundingClientRect() : null;
-                    const originalDisplayWidth = originalRect ? originalRect.width : 0;
-                    const originalDisplayHeight = originalRect ? originalRect.height : 0;
-
-                    // Smart scaling based on image size
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-                    const imageWidth = preloadImg.naturalWidth;
-                    const imageHeight = preloadImg.naturalHeight;
-
-                    // Calculate appropriate display size
-                    let targetWidth, targetHeight;
-
-                    // Ensure lightbox image is at least 1.5x the size it appears on page
-                    const minDisplayWidth = Math.max(
-                      originalDisplayWidth * 1.5,
-                      Math.min(500, viewportWidth * 0.7)
-                    );
-                    const minDisplayHeight = Math.max(
-                      originalDisplayHeight * 1.5,
-                      Math.min(400, viewportHeight * 0.7)
-                    );
-
-                    // Calculate scale to meet minimum size requirements
-                    const scaleForWidth = minDisplayWidth / imageWidth;
-                    const scaleForHeight = minDisplayHeight / imageHeight;
-                    const minScale = Math.max(scaleForWidth, scaleForHeight, 1); // At least 1x (never smaller than original)
-
-                    // Limit maximum scale to prevent pixelation
-                    const maxScale = Math.min(3, viewportWidth * 0.9 / imageWidth, viewportHeight * 0.9 / imageHeight);
-                    const finalScale = Math.min(minScale, maxScale);
-
-                    targetWidth = Math.min(imageWidth * finalScale, viewportWidth * 0.9);
-                    targetHeight = Math.min(imageHeight * finalScale, viewportHeight * 0.9);
-                    img.style.width = targetWidth + 'px';
-                    img.style.height = 'auto';
-                  };
-                  preloadImg.src = imageSrc;
-                }
-
-                // Function to close lightbox
-                function closeLightbox() {
-                  modal.classList.remove('active');
-                  document.body.classList.remove('lightbox-open');
-                  setTimeout(() => {
-                    img.style.display = 'none';
-                    img.src = '';
-                  }, 300);
-                }
-
-                // Event listeners
-                closeBtn.addEventListener('click', closeLightbox);
-
-                modal.addEventListener('click', (e) => {
-                  if (e.target === modal) {
-                    closeLightbox();
-                  }
-                });
-
-                // Keyboard support
-                document.addEventListener('keydown', (e) => {
-                  if (e.key === 'Escape' && modal.classList.contains('active')) {
-                    closeLightbox();
-                  }
-                });
-
-                // Add click handlers to all lightbox images
-                const lightboxWrappers = document.querySelectorAll('.lightbox-wrapper');
-                lightboxWrappers.forEach(wrapper => {
-                  wrapper.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const img = wrapper.querySelector('.lightbox-image');
-                    if (img) {
-                      const src = img.getAttribute('data-src') || img.src;
-                      const alt = img.getAttribute('data-alt') || img.alt;
-                      openLightbox(src, alt, img);
+                  dialog.addEventListener('click', (e) => {
+                    // Backdrop clicks land on the dialog itself; the image and
+                    // the close button both also dismiss.
+                    if (e.target === dialog || e.target === img || e.target === close) {
+                      dialog.close();
                     }
                   });
-                });
-
-                // Clean up function
-                if (window.addCleanup) {
-                  window.addCleanup(() => {
-                    if (modal && modal.parentNode) {
-                      modal.parentNode.removeChild(modal);
-                    }
-                    document.body.classList.remove('lightbox-open');
+                  dialog.addEventListener('close', () => {
+                    document.documentElement.style.overflow = '';
                   });
+                  return dialog;
                 }
-              }
 
-              // Initialize on page load and navigation
-              document.addEventListener('nav', initLightbox);
+                // One delegated listener on the document. It survives SPA
+                // navigation untouched, so there is nothing to rebind or clean up.
+                document.addEventListener('click', async (e) => {
+                  const thumb = e.target && e.target.closest
+                    ? e.target.closest('img.lightbox-image')
+                    : null;
+                  if (!thumb) return;
 
-              // Initialize immediately if DOM is already ready
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initLightbox);
-              } else {
-                initLightbox();
+                  const d = getDialog();
+                  const img = d.querySelector('img');
+                  // currentSrc is the exact URL the browser already fetched, so
+                  // this is a cache hit rather than a second download.
+                  img.src = thumb.currentSrc || thumb.src;
+                  img.alt = thumb.alt || '';
+
+                  // Decode before opening. This is what removes the dark
+                  // rectangle that used to sit there while the JPEG decoded.
+                  try {
+                    await img.decode();
+                  } catch (err) {
+                    /* decode() rejects if src changed mid-flight; showing anyway is fine */
+                  }
+
+                  document.documentElement.style.overflow = 'hidden';
+                  d.showModal();
+                });
               }
             `
           }

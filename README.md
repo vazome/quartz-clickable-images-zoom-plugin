@@ -23,8 +23,9 @@ plugins:
     enabled: true
 ```
 
-It registers as a transformer at order `50`, which puts it after image paths are
-resolved. There are no options.
+It registers as a transformer at order `50` and has no options. Order does not
+matter: the plugin only tags images, and the lightbox reads the browser-resolved
+`img.src` at click time, so it works whether it runs before or after `crawl-links`.
 
 ## Quartz v4
 
